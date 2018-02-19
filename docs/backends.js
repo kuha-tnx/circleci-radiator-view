@@ -43,26 +43,23 @@ function backendOptions() {
       'circle': {
          name: 'Circle CI',
          url: 'https://circleci.com/api/v1/projects',
-         supportsOwnernameFiltering: false,
          token: undefined
       },
       'travis': {
          name: 'Travis CI',
          url: 'https://api.travis-ci.com/repos',
-         supportsOwnernameFiltering: true,
+         ownernameFiltering: true,
          ownername: '',
          token: undefined
       },
       'jenkins': {
          name: 'Jenkins CI',
          url: undefined,
-         supportsOwnernameFiltering: false,
          token: undefined
       },
       'cloudwatch': {
          name: 'AWS CloudWatch',
          url: 'https://monitoring.eu-west-1.amazonaws.com/',
-         supportsOwnernameFiltering: false,
          token: undefined
       }
    }

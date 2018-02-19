@@ -237,7 +237,7 @@
       var opt = opts[settings.mode]
       settings.url = opt.url || settings.url
       settings.token = opt.token || settings.token
-      settings.supportsOwnernameFiltering = opt.supportsOwnernameFiltering;
+      settings.ownernameFiltering = opt.ownernameFiltering;
       settings.ownername = opt.ownername || settings.ownername
       return settings
     }
@@ -276,7 +276,7 @@
         serverUrlInput.value = settings.url
         apiTokenInput.value = settings.token
         ownernameInput.value = settings.ownername
-        ownernameInput.style.display = settings.supportsOwnernameFiltering ? 'block' : 'none'
+        ownernameInput.style.display = settings.ownernameFiltering ? 'block' : 'none'
       }
       setUISelections(settings.mode || defaults[_.keys(defaults)[0]].mode)
 
