@@ -48,6 +48,8 @@ function backendOptions() {
       'travis': {
          name: 'Travis CI',
          url: 'https://api.travis-ci.com/repos',
+         ownernameFiltering: true,
+         ownername: '',
          token: undefined
       },
       'jenkins': {
@@ -141,7 +143,8 @@ var travisBackend = function(settings, resultCallback) {
       })
    }
 
-   travisRequest(settings.url, function(data) {
+   var reposUrl = settings.url + (settings.ownername ? '?owner_name=' + settings.ownername : '');
+   travisRequest(reposUrl, function(data) {
       parseBuilds(data.repos.map(function(repo) {return {id: repo.id, name: repo.slug}}))
    })
 }
