@@ -21,6 +21,8 @@ function buildBackend(settings, callback) {
       backend = jenkinsBackend
    } else if (settings.mode === 'cloudwatch') {
       backend = cloudWatchBackend
+   } else if (settings.mode === 'concourse') {
+      backend = concourseBackend
    }
    var branchFilter = function(build) {
       return settings.branch ? build.branch.match(settings.branch) : true
@@ -61,6 +63,11 @@ function backendOptions() {
          name: 'AWS CloudWatch',
          url: 'https://monitoring.eu-west-1.amazonaws.com/',
          token: undefined
+      },
+      'concourse': {
+         name: 'Concourse',
+         url: 'https://concourse.dev.kuha.io/',
+         token: null
       }
    }
 }
@@ -250,7 +257,6 @@ var jenkinsBackend = function(settings, resultCallback) {
          created: new Date(job.timestamp),
          author: contributor.contributorDisplayName || contributor.contributor
       }
-
    }
 
    var url = settings.url + '/api/json?depth=4&tree=name,url,jobs[name,url,jobs[name,url,actions[contributor,contributorDisplayName,contributorEmail],buildable,builds[result,building,actions[causes[shortDescription]],changeSets[items[author[fullName],timestamp,commitId]],timestamp]]]'
@@ -276,7 +282,7 @@ var jenkinsBackend = function(settings, resultCallback) {
                started: new Date(build.timestamp),
                state: result,
                commit: findLastCommit(job.builds) || findResponsible(job) || findBuildReason(job.builds)
-               })
+            })
          }, []))
       }, [])
       resultCallback(undefined, builds)
@@ -310,5 +316,64 @@ var cloudWatchBackend = function(settings, resultCallback) {
          }
       })
       resultCallback(undefined, builds)
+   })
+}
+
+var concourseBackend = function(settings, resultCallback) {
+   var url = settings.url + 'api/v1/builds'
+   /*
+     ConcourseBuild:
+     {
+      "id": 45,
+      "team_name": "main",
+      "name": "32",                    -> commit.hash
+      "status": "succeeded",           -> state
+      "job_name": "sw-upgrader-build", -> branch
+      "api_url": "/api/v1/builds/45",
+      "pipeline_name": "sw-upgrader",  -> repository
+      "start_time": 1525264982,        -> started, commit.created, commit.author (as duration)
+      "end_time": 1525265089           -> commit.author (as duration)
+     }
+   */
+
+   var durationString = function(start, end) {
+     if (end) {
+       var date = new Date(null)
+       date.setSeconds(end - start)
+       return 'duration: ' + date.toUTCString().substr(17,8)
+     }
+     return null
+   }
+
+   var transform = concourseBuild => ({
+      repository: concourseBuild.pipeline_name,
+      branch: concourseBuild.job_name,
+      started: new Date(concourseBuild.start_time * 1000),
+      state: concourseBuild.status,
+      commit: {
+         created: new Date(concourseBuild.start_time * 1000),
+         author: durationString(concourseBuild.start_time, concourseBuild.end_time),
+         hash: concourseBuild.name
+      }
+   })
+
+   function uniqBy(a, key) {
+      var seen = {}
+      return a.filter(function(item) {
+         var k = key(item)
+         return seen.hasOwnProperty(k) ? false : (seen[k] = true)
+      })
+   }
+
+   var handler = function(err, data) {
+      if (err) {
+         return resultCallback(err)
+      }
+      return resultCallback(undefined, uniqBy(data, concourseBuild => concourseBuild.pipeline_name).map(transform))
+   }
+
+   httpRequest(url, handler, {
+      Accept: 'application/json',
+      apikey: settings.token
    })
 }
