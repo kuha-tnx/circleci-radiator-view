@@ -66,7 +66,7 @@ function backendOptions() {
       },
       'concourse': {
          name: 'Concourse',
-         url: 'https://concourse.dev.kuha.io/',
+         url: 'https://ci.dev.kuha.io/',
          token: null
       }
    }
